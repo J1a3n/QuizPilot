@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>QuizPilot • Teacher</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="container">
+    <h2>Teacher Dashboard</h2>
+    <label>Class:
+      <select id="classFilter"><option value="all">All</option></select>
+    </label>
+    <h3>Inbox (unresolved questions)</h3>
+    <div id="inbox"></div>
+    <h3>Topic Management</h3>
+    <ul id="topics"></ul>
+  </div>
+  <script src="client.js"></script>
+  <script>
+    async function refreshData() {
+      const cls = sessionStorage.class;
+      document.getElementById('classFilter').innerHTML =
+        `<option value="all">All</option><option value="${cls}">${cls}</option>`;
+      const inbox = await apiCall('getTeacherInbox', {
+        classFilter: document.getElementById('classFilter').value
+      });
+      document.getElementById('inbox').innerHTML = inbox.map(r =>
+        `<div>QID: ${r[2]}, Ans: ${r[4]}, AI?: ${r[6]}</div>`
+      ).join('');
+    }
+    document.getElementById('classFilter').onchange = refreshData;
+    window.onload = refreshData;
+  </script>
+</body>
+</html>
