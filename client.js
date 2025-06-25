@@ -1,6 +1,6 @@
 // client.js
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbzYpLy5gKCSiDTJbf8Lk5tbPxihqnvZvoxEcYVBy4P9EhK_CDr72HodjcmxLwEzUoPT/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzl8l3TFPiTKQLhcAY-R2N3ylRgKroq6xm8BIzposvokc85yMz-1KVEA3k3tlpL3A2A/exec';
 
 /**
  * Generic API caller using GET parameters (avoids CORS preflight).
