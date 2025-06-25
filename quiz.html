@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>QuizPilot • Quiz</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="container">
+    <h2>QuizPilot</h2>
+    <div>
+      <label>Topic:
+        <select id="topic">
+          <option value="all">All Topics</option>
+        </select>
+      </label>
+      <button id="start">Start Quiz</button>
+    </div>
+    <div id="analytics"></div>
+    <hr/>
+    <div id="quizSection" style="display:none;">
+      <h3 id="qText"></h3>
+      <div id="options"></div>
+      <button id="nextBtn">Next</button>
+    </div>
+  </div>
+  <script src="client.js"></script>
+  <script>
+    let currentQ;
+
+    async function loadTopics() {
+      // static list or dynamic endpoint
+      ['all','1','2','3','4','5','6'].forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t; opt.textContent = t==='all'?'All Topics':'Topic '+t;
+        document.getElementById('topic').appendChild(opt);
+      });
+    }
+
+    async function showAnalytics() {
+      const res = await apiCall('getStudentAnalytics', { username: sessionStorage.user });
+      document.getElementById('analytics').innerHTML = res.map(a =>
+        `<div>${a.topic}: ${a.done} done, ${a.accuracy}% correct (last ${a.lastAttempted})</div>`
+      ).join('');
+    }
+
+    async function loadQuestion() {
+      const topic = document.getElementById('topic').value;
+      const resp = await apiCall('getNextQuestion', { username: sessionStorage.user, topic });
+      currentQ = resp;
+      document.getElementById('quizSection').style.display = 'block';
+      document.getElementById('qText').textContent = resp.question;
+      document.getElementById('options').innerHTML = resp.options.map(o =>
+        `<button class="opt" data-val="${o.label}">${o.label}. ${o.text}</button>`
+      ).join('');
+      document.querySelectorAll('.opt').forEach(btn =>
+        btn.onclick = () => submitAns(btn.dataset.val)
+      );
+    }
+
+    async function submitAns(choice) {
+      const res = await apiCall('submitAnswer', {
+        username: sessionStorage.user,
+        qid: currentQ.qid,
+        answer: choice,
+        usedAI: false
+      });
+      alert(res.correct ? 'Correct!' : 'Wrong.');
+      loadQuestion();
+      showAnalytics();
+    }
+
+    document.getElementById('start').onclick = async () => {
+      await loadTopics();
+      showAnalytics();
+      loadQuestion();
+    };
+  </script>
+</body>
+</html>
