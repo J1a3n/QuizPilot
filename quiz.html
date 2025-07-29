@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>QuizPilot • Quiz</title>
   <link rel="stylesheet" href="style.css"/>
 </head>
@@ -11,9 +11,7 @@
     <h2>QuizPilot</h2>
     <div>
       <label>Topic:
-        <select id="topic">
-          <option value="all">All Topics</option>
-        </select>
+        <select id="topic"></select>
       </label>
       <button id="start">Start Quiz</button>
     </div>
@@ -22,59 +20,75 @@
     <div id="quizSection" style="display:none;">
       <h3 id="qText"></h3>
       <div id="options"></div>
-      <button id="nextBtn">Next</button>
     </div>
   </div>
-  <script src="client.js"></script>
-  <script>
-    let currentQ;
 
-    async function loadTopics() {
-      // static list or dynamic endpoint
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxzeWgrIXL5NKkMtfFY0g36-w30xUe2Ye3di2ikp42Z0OiwrnXczY6eX0yFbJuabAMK/exec';
+
+    function loadTopics() {
+      const sel = document.getElementById('topic');
       ['all','1','2','3','4','5','6'].forEach(t => {
         const opt = document.createElement('option');
-        opt.value = t; opt.textContent = t==='all'?'All Topics':'Topic '+t;
-        document.getElementById('topic').appendChild(opt);
+        opt.value = t; opt.textContent = t==='all' ? 'All Topics' : 'Topic ' + t;
+        sel.appendChild(opt);
       });
     }
 
-    async function showAnalytics() {
-      const res = await apiCall('getStudentAnalytics', { username: sessionStorage.user });
+    function showAnalytics(res) {
+      if (!res) return;
       document.getElementById('analytics').innerHTML = res.map(a =>
         `<div>${a.topic}: ${a.done} done, ${a.accuracy}% correct (last ${a.lastAttempted})</div>`
       ).join('');
     }
 
-    async function loadQuestion() {
-      const topic = document.getElementById('topic').value;
-      const resp = await apiCall('getNextQuestion', { username: sessionStorage.user, topic });
-      currentQ = resp;
+    function showQuestion(resp) {
+      if (!resp || resp.error) {
+        alert('No more questions or error');
+        return;
+      }
+      sessionStorage.currentQ = JSON.stringify(resp);
       document.getElementById('quizSection').style.display = 'block';
       document.getElementById('qText').textContent = resp.question;
       document.getElementById('options').innerHTML = resp.options.map(o =>
         `<button class="opt" data-val="${o.label}">${o.label}. ${o.text}</button>`
       ).join('');
       document.querySelectorAll('.opt').forEach(btn =>
-        btn.onclick = () => submitAns(btn.dataset.val)
+        btn.onclick = () => submitAnswer(btn.dataset.val)
       );
     }
 
-    async function submitAns(choice) {
-      const res = await apiCall('submitAnswer', {
-        username: sessionStorage.user,
-        qid: currentQ.qid,
-        answer: choice,
-        usedAI: false
-      });
-      alert(res.correct ? 'Correct!' : 'Wrong.');
-      loadQuestion();
-      showAnalytics();
+    function submitAnswer(choice) {
+      const q = JSON.parse(sessionStorage.currentQ);
+      function afterSubmit(res) {
+        alert(res.correct ? 'Correct!' : 'Wrong.');
+        loadNext();
+      }
+      const script = document.createElement('script');
+      script.src = `${API_URL}?action=submitAnswer&username=${encodeURIComponent(sessionStorage.user)}&qid=${encodeURIComponent(q.qid)}&answer=${encodeURIComponent(choice)}&usedAI=0&jsonpCallback=afterSubmit`;
+      document.body.appendChild(script);
     }
 
-    document.getElementById('start').onclick = async () => {
-      await loadTopics();
-      showAnalytics();
-      loadQuestion();
+    function loadNext() {
+      const t = document.getElementById('topic').value;
+      const script = document.createElement('script');
+      script.src = `${API_URL}?action=getNextQuestion&username=${encodeURIComponent(sessionStorage.user)}&topic=${encodeURIComponent(t)}&jsonpCallback=showQuestion`;
+      document.body.appendChild(script);
+    }
+
+    function fetchAnalytics() {
+      const script = document.createElement('script');
+      script.src = `${API_URL}?action=getStudentAnalytics&username=${encodeURIComponent(sessionStorage.user)}&jsonpCallback=showAnalytics`;
+      document.body.appendChild(script);
+    }
+
+    window.onload = () => {
+      loadTopics();
+      fetchAnalytics();
+    };
+    document.getElementById('start').onclick = () => {
+      fetchAnalytics();
+      loadNext();
     };
   </script>
 </body>
