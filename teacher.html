@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>QuizPilot • Teacher</title>
   <link rel="stylesheet" href="style.css"/>
 </head>
@@ -14,24 +14,28 @@
     </label>
     <h3>Inbox (unresolved questions)</h3>
     <div id="inbox"></div>
-    <h3>Topic Management</h3>
-    <ul id="topics"></ul>
   </div>
-  <script src="client.js"></script>
+
   <script>
-    async function refreshData() {
-      const cls = sessionStorage.class;
-      document.getElementById('classFilter').innerHTML =
-        `<option value="all">All</option><option value="${cls}">${cls}</option>`;
-      const inbox = await apiCall('getTeacherInbox', {
-        classFilter: document.getElementById('classFilter').value
-      });
-      document.getElementById('inbox').innerHTML = inbox.map(r =>
-        `<div>QID: ${r[2]}, Ans: ${r[4]}, AI?: ${r[6]}</div>`
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxzeWgrIXL5NKkMtfFY0g36-w30xUe2Ye3di2ikp42Z0OiwrnXczY6eX0yFbJuabAMK/exec';
+
+    function showInbox(data) {
+      document.getElementById('inbox').innerHTML = data.map(r =>
+        `<div>Student ${r[1]} asked QID ${r[2]} | AI used: ${r[6]}</div>`
       ).join('');
     }
-    document.getElementById('classFilter').onchange = refreshData;
+
+    function refreshData() {
+      const cls = sessionStorage.getItem('class') || 'all';
+      const cf = document.getElementById('classFilter');
+      cf.innerHTML = `<option value="all">All</option><option value="${cls}">${cls}</option>`;
+      const script = document.createElement('script');
+      script.src = `${API_URL}?action=getTeacherInbox&classFilter=${encodeURIComponent(cls)}&jsonpCallback=showInbox`;
+      document.body.appendChild(script);
+    }
+
     window.onload = refreshData;
+    document.getElementById('classFilter').onchange = refreshData;
   </script>
 </body>
 </html>
