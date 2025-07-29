@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>QuizPilot • Login</title>
   <link rel="stylesheet" href="style.css"/>
 </head>
@@ -16,21 +16,28 @@
     </form>
     <div id="error" class="error"></div>
   </div>
-  <script src="client.js"></script>
+
   <script>
-    document.getElementById('loginForm').onsubmit = async e => {
-      e.preventDefault();
-      const u = document.getElementById('username').value;
-      const p = document.getElementById('password').value;
-      const res = await apiCall('login', { username: u, password: p });
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxzeWgrIXL5NKkMtfFY0g36-w30xUe2Ye3di2ikp42Z0OiwrnXczY6eX0yFbJuabAMK/exec';
+
+    function handleLogin(res) {
       if (res.success) {
-        sessionStorage.setItem('user', u);
+        sessionStorage.setItem('user', res.username || res.user);
         sessionStorage.setItem('role', res.role);
         sessionStorage.setItem('class', res.class);
-        location.href = res.role === 'teacher' ? 'teacher.html' : 'quiz.html';
+        window.location = res.role === 'teacher' ? 'teacher.html' : 'quiz.html';
       } else {
         document.getElementById('error').textContent = 'Login failed';
       }
+    }
+
+    document.getElementById('loginForm').onsubmit = e => {
+      e.preventDefault();
+      const u = encodeURIComponent(document.getElementById('username').value);
+      const p = encodeURIComponent(document.getElementById('password').value);
+      const script = document.createElement('script');
+      script.src = `${API_URL}?action=login&username=${u}&password=${p}&jsonpCallback=handleLogin`;
+      document.body.appendChild(script);
     };
   </script>
 </body>
